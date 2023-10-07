@@ -25,10 +25,11 @@ def save_data(data, collection_name, year_start, year_end):
     os.system(f'rm -rf {current_file}.gz')
 
 @retry(delay=300, tries=5, logger=logger)
-def query_openalex(query, start_year, end_year, per_page):
+def query_openalex(query, start_year, end_year, per_page, cursor):
     url = f'https://api.openalex.org/works?filter={query}'
     url += f',publication_year:{start_year}-{end_year}'
     url += f'&per_page={per_page}'
+    url += f'&cursor={cursor}'
     url += f'&api_key={OPENALEX_API_KEY}'
     r = requests.get(url)
     return r.json()
@@ -41,19 +42,26 @@ def send_to_crawler(current_data):
         if title and doi:
             doi = doi.strip()
             title = title.strip()
-            url = f'http://doi.org/{doi}'
+            url = f'{doi}'
             crawl_list.append({'url': url, 'title': title})
     logger.debug(f'posting {len(crawl_list)} elements to crawl')
     requests.post(crawler_endpoint_url, json={'list': crawl_list})
 
 def harvest_and_save(collection_name, query, year_start, year_end):
     
-    nb_results = query_openalex(query, year_start, year_end, 1)['meta']['count']
+    nb_results = query_openalex(query, year_start, year_end, 1, '*')['meta']['count']
+    logger.debug(f'{nb_results} results for {collection_name} and query {query} {year_start} {year_end}')
     nb_pages = math.ceil(nb_results/PER_PAGE)
 
     data = []
     for p in range(1, nb_pages+1):
-        current_data = query_openalex(query, 2021, 2021, 200)['results']
+        if p==1:
+            cursor = '*'
+        else:
+            cursor = current_cursor
+        query_res = query_openalex(query, year_start, year_end, PER_PAGE, cursor)
+        current_data = query_res['results']
+        current_cursor = query_res['meta']['next_cursor']
         send_to_crawler(current_data)
         data += current_data
 
