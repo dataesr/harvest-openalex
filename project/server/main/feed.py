@@ -69,5 +69,5 @@ def harvest_and_save(collection_name, query, year_start, year_end):
     save_data(data, collection_name, year_start, year_end)
 
 def harvest_all(collection_name, query, year_start, year_end):
-    for year in range(year_start, year_start+1):
+    for year in range(year_start, year_end+1):
         harvest_and_save(collection_name, query, year, year)
