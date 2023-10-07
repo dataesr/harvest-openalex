@@ -47,7 +47,7 @@ def send_to_crawler(current_data):
     logger.debug(f'posting {len(crawl_list)} elements to crawl')
     requests.post(crawler_endpoint_url, json={'list': crawl_list})
 
-def harvest_and_save(collection_name, query, year_start, year_end):
+def harvest_and_save(collection_name, query, year_start, year_end, send_to_crawler):
     
     nb_results = query_openalex(query, year_start, year_end, 1, '*')['meta']['count']
     logger.debug(f'{nb_results} results for {collection_name} and query {query} {year_start} {year_end}')
@@ -62,12 +62,13 @@ def harvest_and_save(collection_name, query, year_start, year_end):
         query_res = query_openalex(query, year_start, year_end, PER_PAGE, cursor)
         current_data = query_res['results']
         current_cursor = query_res['meta']['next_cursor']
-        send_to_crawler(current_data)
+        if send_to_crawler:
+            send_to_crawler(current_data)
         data += current_data
 
     logger.debug(f'{year_start}-{year_end}|{len(data)}')
     save_data(data, collection_name, year_start, year_end)
 
-def harvest_all(collection_name, query, year_start, year_end):
+def harvest_all(collection_name, query, year_start, year_end, send_to_crawler):
     for year in range(year_start, year_end+1):
-        harvest_and_save(collection_name, query, year, year)
+        harvest_and_save(collection_name, query, year, year, send_to_crawler)
