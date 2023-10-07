@@ -65,7 +65,7 @@ def harvest_and_save(collection_name, query, year_start, year_end):
         send_to_crawler(current_data)
         data += current_data
 
-    logger.debug(f'{year_start_end}|{len(data)}')
+    logger.debug(f'{year_start}-{year_end}|{len(data)}')
     save_data(data, collection_name, year_start, year_end)
 
 def harvest_all(collection_name, query, year_start, year_end):
