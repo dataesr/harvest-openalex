@@ -1,6 +1,7 @@
 import json
 import os
 import requests
+import time
 import math
 import multiprocess as mp
 from retry import retry
@@ -103,22 +104,35 @@ def check_countries(collection_name, year_start, year_end) -> dict:
     logger.debug(f'Found {len(all_affiliations)} affiliations in total.')
     # Deduplicate affiliations
     all_affiliations_list = list(filter(is_na, list(all_affiliations)))
+    all_affiliations_dict = {}
     logger.debug(f'Found {len(all_affiliations_list)} different affiliations in total.')
     NB_PARALLEL_JOB = 10
-    nb_publis_per_group = math.ceil(len(all_affiliations_list)/NB_PARALLEL_JOB)
-    groups = list(chunks(lst=all_affiliations_list, n=nb_publis_per_group))
-    logger.debug(f'{len(groups)} groups with {nb_publis_per_group} each')
-    all_affiliations_matches = get_matcher_parallel(groups)
-    all_affiliations_dict = {}
-    for elt in all_affiliations_matches:
-        query = elt['query']
-        all_affiliations_dict[query] = set([k['id'].upper() for k in elt['matches']])
+    affiliations_list_chunks = list(chunks(all_affiliations_list, 1000))
+    for affiliation_list in affiliations_list_chunks:
+        nb_publis_per_group = math.ceil(len(affiliation_list)/NB_PARALLEL_JOB)
+        groups = list(chunks(lst=affiliation_list, n=nb_publis_per_group))
+        logger.debug(f'{len(groups)} groups with {nb_publis_per_group} each')
+        all_affiliations_matches = get_matcher_parallel(groups)
+        for elt in all_affiliations_matches:
+            query = elt['query']
+            all_affiliations_dict[query] = set([k['id'].upper() for k in elt['matches']])
     #compare with open alex
+    mismatches = {}
     for publication in publications:
+        publication_id = publication['id']
+        publication_doi = publication.get('doi', 'no_doi')
         for aut in publication.get('authorships', []):
             current_aff = aut.get('raw_affiliation_string')
             if aut.get('raw_affiliation_string') and aut.get('raw_affiliation_string') in all_affiliations_dict:
                 computed_countries = all_affiliations_dict[aut.get('raw_affiliation_string')]
                 openalex_countries = set(aut.get('countries'))
                 if computed_countries != openalex_countries:
-                    logger.debug(f'{current_aff} ## {openalex_countries} ## {computed_countries}')
+                    mismatch_key = f'{publication_id}##{current_aff}'
+                    if mismatch_key not in mismatches:
+                        mismatches[mismatch_key] = {'id': publication_id, 'doi': publication_doi, 'affiliation': current_aff, 
+                                'openalex_countries': list(openalex_countries), 'computed_countries': list(computed_countries)}
+                        logger.debug(f'{mismatch_key}##{current_aff} ## {openalex_countries} in openalex ## {computed_countries} computed')
+    mismatched = list(mismatches.values())
+    mismatch_output = f'mismatch_country_{collection_name}_{year_start}_{year_end}.csv'
+    pd.DataFrame(mismatched).to_csv(mismatch_output, index=False)
+    upload_object('openalex', mismatch_output, f'{collection_name}/mismatch/{mismatch_output}')
