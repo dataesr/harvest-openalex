@@ -2,7 +2,7 @@ import redis
 from rq import Queue, Connection
 from flask import render_template, Blueprint, jsonify, request, current_app
 
-from project.server.main.tasks import create_task_harvest
+from project.server.main.tasks import create_task_harvest, create_task_check_affiliations
 
 main_blueprint = Blueprint("main", __name__,)
 from project.server.main.logger import get_logger
@@ -21,6 +21,20 @@ def run_task_download():
     with Connection(redis.from_url(current_app.config["REDIS_URL"])):
         q = Queue(queue_name, default_timeout=216000)
         task = q.enqueue(create_task_harvest, args)
+    response_object = {
+        "status": "success",
+        "data": {
+            "task_id": task.get_id()
+        }
+    }
+    return jsonify(response_object), 202
+
+@main_blueprint.route("/check_affiliations", methods=["POST"])
+def run_task_check_affiliations():
+    args = request.get_json(force=True)
+    with Connection(redis.from_url(current_app.config["REDIS_URL"])):
+        q = Queue(queue_name, default_timeout=216000)
+        task = q.enqueue(create_task_check_affiliations, args)
     response_object = {
         "status": "success",
         "data": {
