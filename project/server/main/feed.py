@@ -7,6 +7,7 @@ from urllib.parse import quote_plus
 
 from project.server.main.logger import get_logger
 from project.server.main.utils_swift import upload_object
+from project.server.main.parse import parse_notice
 
 logger = get_logger(__name__)
 
@@ -16,12 +17,12 @@ crawler_endpoint_url = f'{CRAWLER_SERVICE}/crawl'
 PER_PAGE = 200
 OPENALEX_API_KEY = os.getenv('OPENALEX_API_KEY')
 
-def save_data(data, collection_name, year_start, year_end):
+def save_data(data, collection_name, year_start, year_end, data_type):
     year_start_end = f'{year_start}_{year_end}'
     current_file = f'openalex_{year_start_end}.json'
     json.dump(data, open(current_file, 'w'))
     os.system(f'gzip {current_file}')
-    upload_object('openalex', f'{current_file}.gz', f'{collection_name}/raw/{current_file}.gz')
+    upload_object('openalex', f'{current_file}.gz', f'{collection_name}/{data_type}/{current_file}.gz')
     os.system(f'rm -rf {current_file}.gz')
 
 @retry(delay=300, tries=5, logger=logger)
@@ -53,7 +54,7 @@ def harvest_and_save(collection_name, query, year_start, year_end, send_to_crawl
     logger.debug(f'{nb_results} results for {collection_name} and query {query} {year_start} {year_end}')
     nb_pages = math.ceil(nb_results/PER_PAGE)
 
-    data = []
+    data, parsed_data = [], []
     for p in range(1, nb_pages+1):
         if p==1:
             cursor = '*'
@@ -65,9 +66,11 @@ def harvest_and_save(collection_name, query, year_start, year_end, send_to_crawl
         if send_to_crawler:
             send_to_crawler(current_data)
         data += current_data
+        parsed_data += [parse_notice(n) for n in current_data]
 
     logger.debug(f'{year_start}-{year_end}|{len(data)}')
-    save_data(data, collection_name, year_start, year_end)
+    save_data(data, collection_name, year_start, year_end, 'raw')
+    save_data(parsed_data, collection_name, year_start, year_end, 'parsed')
 
 def harvest_all(collection_name, query, year_start, year_end, send_to_crawler):
     for year in range(year_start, year_end+1):
