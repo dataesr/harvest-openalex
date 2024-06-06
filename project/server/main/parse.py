@@ -74,6 +74,19 @@ def get_grants(grants):
     return gs
 
 
+def get_location(notice):
+    primary_location = notice.get("primary_location")
+    if primary_location:
+        return primary_location
+    best_oa_location = notice.get("best_oa_location")
+    if best_oa_location:
+        return best_oa_location
+    locations = notice.get("locations")
+    if locations and len(locations) > 0:
+        return locations[0]
+    return False
+
+
 def parse_notice(notice):
     res = {}
     res["sources"] = ["openalex"]
@@ -92,7 +105,9 @@ def parse_notice(notice):
             external_ids.append(
                 {"id_type": id, "id_value": notice.get("ids").get(id)})
     res["title"] = notice.get("title", "")
-    source = notice.get("primary_location", {}).get("source", {})
+    location = get_location(notice)
+    if location:
+        source = location.get("source", {})
     if source:
         publisher = source.get("host_organization_name")
         if publisher:
