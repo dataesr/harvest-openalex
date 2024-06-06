@@ -1,0 +1,4 @@
+.idea
+.mypy*
+.vscode
+venv
