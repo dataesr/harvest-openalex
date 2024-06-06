@@ -106,6 +106,7 @@ def parse_notice(notice):
                 {"id_type": id, "id_value": notice.get("ids").get(id)})
     res["title"] = notice.get("title", "")
     location = get_location(notice)
+    source = False
     if location:
         source = location.get("source", {})
     if source:
