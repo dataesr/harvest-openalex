@@ -327,6 +327,10 @@
           },
           "reference": {
             "type": "string"
+          },
+          "level": {
+            "type": "string",
+            "enum": ["topic", "subfield", "field", "domain"]
           }
         }
       }
@@ -393,6 +397,12 @@
             "type": "string"
           },
           "country": {
+            "type": "string"
+          },
+          "agencyid": {
+            "type": "string"
+          },
+          "datasource": {
             "type": "string"
           }
         },
