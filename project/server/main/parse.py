@@ -45,21 +45,27 @@ def get_classifications(topics):
         classification["reference"] = "openalex"
         classification["level"] = "topic"
         classifications.append(classification)
-        classification["label"] = topic.get("subfield").get("display_name")
-        classification["code"] = topic.get("subfield").get("id")
-        classification["reference"] = "openalex"
-        classification["level"] = "subfield"
-        classifications.append(classification)
-        classification["label"] = topic.get("field").get("display_name")
-        classification["code"] = topic.get("field").get("id")
-        classification["reference"] = "openalex"
-        classification["level"] = "field"
-        classifications.append(classification)
-        classification["label"] = topic.get("domain").get("display_name")
-        classification["code"] = topic.get("domain").get("id")
-        classification["reference"] = "openalex"
-        classification["level"] = "domain"
-        classifications.append(classification)
+        subfield = topic.get("subfield")
+        if subfield:
+            classification["label"] = subfield.get("display_name")
+            classification["code"] = subfield.get("id")
+            classification["reference"] = "openalex"
+            classification["level"] = "subfield"
+            classifications.append(classification)
+        field = topic.get("field")
+        if field:
+            classification["label"] = field.get("display_name")
+            classification["code"] = field.get("id")
+            classification["reference"] = "openalex"
+            classification["level"] = "field"
+            classifications.append(classification)
+        domain = topic.get("domain")
+        if domain:
+            classification["label"] = domain.get("display_name")
+            classification["code"] = domain.get("id")
+            classification["reference"] = "openalex"
+            classification["level"] = "domain"
+            classifications.append(classification)
     return classifications
 
 
