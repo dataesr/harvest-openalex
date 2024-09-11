@@ -28,10 +28,11 @@ def get_authors(authorships):
         a["corresponding"] = author.get("is_corresponding")
         a["external_ids"] = [{"id_type": "openalex",
                               "id_value": author.get("author").get("id")}]
-        a["full_name"] = author.get("raw_author_name")
+        if isinstance(author.get("raw_author_name"), str):
+            a["full_name"] = author.get("raw_author_name")
         orcid = author.get("author", {}).get("orcid")
-        if orcid:
-            a["orcid"] = orcid.replace("https://orcid.org/", "")
+        if isinstance(orcid, str) and 'orcid' in orcid.lower():
+            a["orcid"] = orcid.lower().replace("https://orcid.org/", "").upper()
         authors.append(a)
     return authors
 
@@ -110,7 +111,11 @@ def parse_notice(notice):
         if id not in ["doi", "openalex"]:
             external_ids.append(
                 {"id_type": id, "id_value": notice.get("ids").get(id)})
-    res["title"] = notice.get("title", "")
+    title = notice.get("title", "")
+    if title:
+        res["title"] = notice.get("title", "")
+    else:
+        return None
     location = get_location(notice)
     source = False
     if location:

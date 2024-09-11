@@ -68,7 +68,10 @@ def harvest_and_save(collection_name, query, year_start, year_end, send_to_crawl
         if send_to_crawler:
             send_to_crawler(current_data)
         data += current_data
-        parsed_data += [parse_notice(n) for n in current_data]
+        for n in current_data:
+            parsed = parse_notice(n)
+            if parsed:
+                parsed_data.append(parsed)
 
     schema = json.load(open("/src/project/server/main/schema.json", "r"))
     is_valid = validate_json_schema(data=parsed_data, _schema=schema)
