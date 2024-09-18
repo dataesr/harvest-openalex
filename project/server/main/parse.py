@@ -6,10 +6,10 @@ def get_author_affiliations(institutions):
         if country:
             a["country"] = country
         a["external_ids"] = [
-            {"id_type": "openalex", "id_value": institution.get("id")}]
+            {"id_type": "openalex", "id_value": institution.get("id").split('/')[-1]}]
         ror = institution.get("ror")
         if ror:
-            a["external_ids"].append({"id_type": "ror", "id_value": ror})
+            a["external_ids"].append({"id_type": "ror", "id_value": ror.split('/')[-1]})
         name = institution.get("display_name")
         if name:
             a["name"] = name
@@ -26,8 +26,7 @@ def get_authors(authorships):
             a["affiliations"] = affiliations
         a["author_position"] = index + 1
         a["corresponding"] = author.get("is_corresponding")
-        a["external_ids"] = [{"id_type": "openalex",
-                              "id_value": author.get("author").get("id")}]
+        a["external_ids"] = [{"id_type": "openalex","id_value": author.get("author").get("id").split('/')[-1]}]
         if isinstance(author.get("raw_author_name"), str):
             a["full_name"] = author.get("raw_author_name")
         orcid = author.get("author", {}).get("orcid")
@@ -48,25 +47,28 @@ def get_classifications(topics):
         classifications.append(classification)
         subfield = topic.get("subfield")
         if subfield:
-            classification["label"] = subfield.get("display_name")
-            classification["code"] = subfield.get("id")
-            classification["reference"] = "openalex"
-            classification["level"] = "subfield"
-            classifications.append(classification)
+            classification2 = {}
+            classification2["label"] = subfield.get("display_name")
+            classification2["code"] = subfield.get("id")
+            classification2["reference"] = "openalex"
+            classification2["level"] = "subfield"
+            classifications.append(classification2)
         field = topic.get("field")
         if field:
-            classification["label"] = field.get("display_name")
-            classification["code"] = field.get("id")
-            classification["reference"] = "openalex"
-            classification["level"] = "field"
-            classifications.append(classification)
+            classification3 = {}
+            classification3["label"] = field.get("display_name")
+            classification3["code"] = field.get("id")
+            classification3["reference"] = "openalex"
+            classification3["level"] = "field"
+            classifications.append(classification3)
         domain = topic.get("domain")
         if domain:
-            classification["label"] = domain.get("display_name")
-            classification["code"] = domain.get("id")
-            classification["reference"] = "openalex"
-            classification["level"] = "domain"
-            classifications.append(classification)
+            classification4 = {}
+            classification4["label"] = domain.get("display_name")
+            classification4["code"] = domain.get("id")
+            classification4["reference"] = "openalex"
+            classification4["level"] = "domain"
+            classifications.append(classification4)
     return classifications
 
 
@@ -97,20 +99,34 @@ def get_location(notice):
 def parse_notice(notice):
     res = {}
     res["sources"] = ["openalex"]
+    external_ids = []
+    openalex_id = notice.get("id").split('/')[-1].lower()
+    res['openalex_id'] = openalex_id
+    external_ids.append({"id_type": "openalex", "id_value": openalex_id})
     doi = notice.get("doi")
     if doi:
         doi = doi.replace('https://doi.org/', '').lower()
         res["doi"] = doi
         res["id"] = "doi"+doi
-    external_ids = []
-    external_ids.append(
-        {"id_type": "openalex", "id_value": res.get("openalex_id")})
-    if doi:
         external_ids.append({"id_type": "doi", "id_value": doi})
+
+    hal_id = None
+    locations = notice.get('locations')
+    if isinstance(locations, list):
+        for loc in locations:
+            if isinstance(loc.get('landing_page_url'), str) and 'hal.science' in loc.get('landing_page_url'):
+                hal_id = loc.get('landing_page_url').split('/')[-1]
+                external_ids.append({"id_type": "hal_id", "id_value": hal_id})
+
     for id in notice.get("ids"):
         if id not in ["doi", "openalex"]:
             external_ids.append(
                 {"id_type": id, "id_value": notice.get("ids").get(id)})
+
+    if res.get('id') is None and hal_id:
+        res['id'] = 'hal'+hal_id
+    if res.get('id') is None:
+        res['id'] = 'openalex'+openalex_id
     title = notice.get("title", "")
     if title:
         res["title"] = notice.get("title", "")
@@ -131,7 +147,7 @@ def parse_notice(notice):
     if publication_year:
         res["publication_year"] = str(publication_year)
     res["url"] = notice.get("id")
-    publication_type = notice.get("type_crossref")
+    publication_type = notice.get("type")
     if publication_type:
         res["publication_types"] = [publication_type]
     res["authors"] = get_authors(notice.get("authorships", []))
