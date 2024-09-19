@@ -75,12 +75,10 @@ def harvest_and_save(collection_name, query, year_start, year_end, send_to_crawl
 
     schema = json.load(open("/src/project/server/main/schema.json", "r"))
     is_valid = validate_json_schema(data=parsed_data, _schema=schema)
-    if is_valid:
-        logger.debug(f'{year_start}-{year_end} | {len(data)}')
-        save_data(data, collection_name, year_start, year_end, 'raw')
-        save_data(parsed_data, collection_name, year_start, year_end, 'parsed')
-    else:
-        logger.error("Parsed data are not validated against the JSON schema. Please see errors logged before.")
+    if not is_valid:
+        logger.error(f"For collection_name {collection_name} {year_start} {year_end}, parsed data are not validated against the JSON schema. Please see errors logged before.")
+    save_data(data, collection_name, year_start, year_end, 'raw')
+    save_data(parsed_data, collection_name, year_start, year_end, 'parsed')
 
 
 def harvest_all(collection_name, query, year_start, year_end, send_to_crawler):

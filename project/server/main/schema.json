@@ -20,7 +20,7 @@
     },
     "id": {
       "type": "string",
-      "pattern": "^doi10\\.*"
+      "pattern": "^(doi|hal|openalex).*"
     },
     "doi": {
       "type": "string",

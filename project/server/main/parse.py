@@ -100,33 +100,33 @@ def parse_notice(notice):
     res = {}
     res["sources"] = ["openalex"]
     external_ids = []
-    openalex_id = notice.get("id").split('/')[-1].lower()
+    openalex_id = notice.get("id").split("/")[-1].lower()
     res['openalex_id'] = openalex_id
-    external_ids.append({"id_type": "openalex", "id_value": openalex_id})
+    external_ids.append({ "id_type": "openalex", "id_value": openalex_id })
     doi = notice.get("doi")
     if doi:
-        doi = doi.replace('https://doi.org/', '').lower()
+        doi = doi.replace("https://doi.org/", "").lower()
         res["doi"] = doi
-        res["id"] = "doi"+doi
-        external_ids.append({"id_type": "doi", "id_value": doi})
+        res["id"] = "doi" + doi
+        external_ids.append({ "id_type": "doi", "id_value": doi })
 
     hal_id = None
-    locations = notice.get('locations')
+    locations = notice.get("locations")
     if isinstance(locations, list):
         for loc in locations:
-            if isinstance(loc.get('landing_page_url'), str) and 'hal.science' in loc.get('landing_page_url'):
-                hal_id = loc.get('landing_page_url').split('/')[-1]
-                external_ids.append({"id_type": "hal_id", "id_value": hal_id})
+            if isinstance(loc.get("landing_page_url"), str) and "hal.science" in loc.get("landing_page_url"):
+                hal_id = loc.get("landing_page_url").split("/")[-1]
+                external_ids.append({ "id_type": "hal_id", "id_value": hal_id })
 
     for id in notice.get("ids"):
         if id not in ["doi", "openalex"]:
             external_ids.append(
                 {"id_type": id, "id_value": notice.get("ids").get(id)})
 
-    if res.get('id') is None and hal_id:
-        res['id'] = 'hal'+hal_id
-    if res.get('id') is None:
-        res['id'] = 'openalex'+openalex_id
+    if res.get("id") is None and hal_id:
+        res["id"] = "hal" + hal_id
+    if res.get("id") is None:
+        res["id"] = "openalex" + openalex_id
     title = notice.get("title", "")
     if title:
         res["title"] = notice.get("title", "")
