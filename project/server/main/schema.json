@@ -110,7 +110,7 @@
     },
     "openalex_id": {
       "type": "string",
-      "pattern": "^w\\d{8,10}$"
+      "pattern": "^w\\d{7,10}$"
     },
     "publication_year": {
       "type": "string",
