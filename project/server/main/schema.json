@@ -26,6 +26,21 @@
       "type": "string",
       "pattern": "^10\\.*"
     },
+    "counts_by_year": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "year": {
+            "type": "int"
+          },
+          "cited_by_count": {
+            "type": "int"
+          }
+        },
+        "required": ["cited_by_count", "year"]
+      }
+    },
     "external_ids": {
       "type": "array",
       "items": {

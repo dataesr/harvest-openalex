@@ -150,6 +150,8 @@ def parse_notice(notice):
     publication_type = notice.get("type")
     if publication_type:
         res["publication_types"] = [publication_type]
+    if notice.get("counts_by_year"):
+        res["counts_by_year"] = notice.get("counts_by_year")
     res["authors"] = get_authors(notice.get("authorships", []))
     res["classifications"] = get_classifications(notice.get("topics", []))
     res["grants"] = get_grants(notice.get("grants", []))
