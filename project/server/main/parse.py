@@ -1,3 +1,32 @@
+def get_cited_counts(notice):
+    res = {}
+    if notice.get("counts_by_year"):
+        counts = {}
+        for e in notice.get("counts_by_year"):
+            y = e['year']
+            cnt = e['cited_by_count']
+            counts[y] = cnt
+        res['cited_by_counts_by_year'] = counts
+    return res
+
+def light_parse(notice):
+    res = {}
+    openalex_id = notice.get("id").split("/")[-1]
+    res['openalex_id'] = openalex_id
+    doi = notice.get("doi")
+    if doi:
+        doi = doi.replace("https://doi.org/", "").lower()
+        res["doi"] = doi
+        res["id"] = "doi" + doi
+    else:
+        return None
+    if 'topics' in notice:
+        res['topics'] = notice['topics']
+    citation_counts = get_cited_counts(notice)
+    res.update(citation_counts)
+    return res
+
+
 def get_author_affiliations(institutions):
     affiliations = []
     for institution in institutions:
@@ -132,6 +161,8 @@ def parse_notice(notice):
         res["title"] = notice.get("title", "")
     else:
         return None
+    citation_counts = get_cited_counts(notice)
+    res.update(citation_counts)
     location = get_location(notice)
     source = False
     if location:
@@ -150,8 +181,6 @@ def parse_notice(notice):
     publication_type = notice.get("type")
     if publication_type:
         res["publication_types"] = [publication_type]
-    if notice.get("counts_by_year"):
-        res["counts_by_year"] = notice.get("counts_by_year")
     res["authors"] = get_authors(notice.get("authorships", []))
     res["classifications"] = get_classifications(notice.get("topics", []))
     res["grants"] = get_grants(notice.get("grants", []))

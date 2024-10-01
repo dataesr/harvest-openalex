@@ -3,11 +3,12 @@ import math
 import os
 import requests
 from retry import retry
+import pandas as pd
 
 from project.server.main.logger import get_logger
-from project.server.main.parse import parse_notice
+from project.server.main.parse import parse_notice, light_parse
 from project.server.main.utils import validate_json_schema
-from project.server.main.utils_swift import upload_object
+from project.server.main.utils_swift import upload_object, download_object
 
 logger = get_logger(__name__)
 
@@ -16,11 +17,28 @@ crawler_endpoint_url = f'{CRAWLER_SERVICE}/crawl'
 PER_PAGE = 200
 OPENALEX_API_KEY = os.getenv('OPENALEX_API_KEY')
 
+def get_data(collection_name, year_start, year_end, data_type):
+    year_start_end = f'{year_start}_{year_end}'
+    current_file = f'openalex_{year_start_end}.json.gz'
+    download_object('openalex', f'{collection_name}/{data_type}/{current_file}', current_file)
+    return current_file
+
+def to_light(collection_name, year_start, year_end):
+    current_file = get_data(collection_name, year_start, year_end, 'raw')
+    data = pd.read_json(current_file).to_dict(orient='records')
+    new_data = []
+    for d in data:
+        elt = light_parse(d)
+        if elt:
+            new_data.append(elt)
+    save_data(new_data, collection_name, year_start, year_end, 'light')
 
 def save_data(data, collection_name, year_start, year_end, data_type):
     year_start_end = f'{year_start}_{year_end}'
     current_file = f'openalex_{year_start_end}.json'
+    os.system(f'rm -rf {current_file}')
     json.dump(data, open(current_file, 'w'))
+    os.system(f'rm -rf {current_file}.gz')
     os.system(f'gzip {current_file}')
     upload_object('openalex', f'{current_file}.gz', f'{collection_name}/{data_type}/{current_file}.gz')
     os.system(f'rm -rf {current_file}.gz')
@@ -56,7 +74,7 @@ def harvest_and_save(collection_name, query, year_start, year_end, send_to_crawl
     logger.debug(f"{nb_results} results for {collection_name} and query {query} {year_start} {year_end}")
     nb_pages = math.ceil(nb_results / PER_PAGE)
 
-    data, parsed_data = [], []
+    data, parsed_data, light_data = [], [], []
     for page in range(1, nb_pages + 1):
         if page == 1:
             cursor = "*"
@@ -72,6 +90,9 @@ def harvest_and_save(collection_name, query, year_start, year_end, send_to_crawl
             parsed = parse_notice(n)
             if parsed:
                 parsed_data.append(parsed)
+            light = light_parse(notice)
+            if light:
+                light_data.append(light)
 
     schema = json.load(open("/src/project/server/main/schema.json", "r"))
     is_valid = validate_json_schema(data=parsed_data, _schema=schema)
@@ -79,6 +100,7 @@ def harvest_and_save(collection_name, query, year_start, year_end, send_to_crawl
         logger.error(f"For collection_name {collection_name} {year_start} {year_end}, parsed data are not validated against the JSON schema. Please see errors logged before.")
     save_data(data, collection_name, year_start, year_end, 'raw')
     save_data(parsed_data, collection_name, year_start, year_end, 'parsed')
+    save_data(light_data, collection_name, year_start, year_end, 'light')
 
 
 def harvest_all(collection_name, query, year_start, year_end, send_to_crawler):
