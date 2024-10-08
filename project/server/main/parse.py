@@ -20,12 +20,27 @@ def light_parse(notice):
         res["id"] = "doi" + doi
     else:
         return None
-    if 'topics' in notice:
-        res['topics'] = notice['topics']
+    for f in ['apc_list', 'apc_paid', 'topics']:
+        if f in notice:
+            res[f] = notice[f]
     citation_counts = get_cited_counts(notice)
     res.update(citation_counts)
+    corresponding = get_corresponding(notice)
+    res.update(corresponding)
     return res
 
+
+def get_corresponding(notice):
+    countries = []
+    if not isinstance(notice.get('authorships'), list):
+        return {}
+    for index, author in enumerate(notice['authorships']):
+        if author.get('is_corresponding') is True:
+            if isinstance(author.get('countries', []), list):
+                countries += author.get('countries', [])
+    countries = list(set(countries))
+    countries.sort()
+    return {'corresponding_countries': countries}
 
 def get_author_affiliations(institutions):
     affiliations = []

@@ -4,10 +4,12 @@ import os
 import requests
 from retry import retry
 import pandas as pd
+import pymongo
+import datetime
 
 from project.server.main.logger import get_logger
 from project.server.main.parse import parse_notice, light_parse
-from project.server.main.utils import validate_json_schema
+from project.server.main.utils import validate_json_schema, to_jsonl
 from project.server.main.utils_swift import upload_object, download_object
 
 logger = get_logger(__name__)
@@ -17,11 +19,43 @@ crawler_endpoint_url = f'{CRAWLER_SERVICE}/crawl'
 PER_PAGE = 200
 OPENALEX_API_KEY = os.getenv('OPENALEX_API_KEY')
 
+def reset_mongo():
+    collection_name = 'openalex_enrichment'
+    logger.debug(f'Dropping {collection_name} collection before insertion')
+    myclient = pymongo.MongoClient('mongodb://mongo:27017/')
+    myclient['scanr'][collection_name].drop()
+
+def save_mongo(data, year):
+    output_json = f'openalex_light_{year}.json'
+    os.system(f'rm -rf {output_json}')
+    to_jsonl(data, f'openalex_light_{year}.json')
+    collection_name = 'openalex_enrichment'
+    mongoimport = f"mongoimport --numInsertionWorkers 2 --uri mongodb://mongo:27017/scanr --file {output_json}" \
+                  f" --collection {collection_name}"
+    start = datetime.datetime.now()
+    logger.debug(f'Mongoimport openalex {year} start at {start}')
+    logger.debug(f'{mongoimport}')
+    os.system(mongoimport)
+    logger.debug(f'Checking indexes on collection {collection_name}')
+    myclient = pymongo.MongoClient('mongodb://mongo:27017/')
+    mydb = myclient['scanr']
+    mycol = mydb[collection_name]
+    mycol.create_index('id')
+    os.system(f'rm -rf {output_json}')
+    logger.debug(f'done')
+
+
 def get_data(collection_name, year_start, year_end, data_type):
     year_start_end = f'{year_start}_{year_end}'
     current_file = f'openalex_{year_start_end}.json.gz'
     download_object('openalex', f'{collection_name}/{data_type}/{current_file}', current_file)
     return current_file
+
+def to_light_all(collection_name, year_start, year_end):
+    reset_mongo()
+    for year in range(year_start, year_end+1):
+        to_light(collection_name, year, year)
+
 
 def to_light(collection_name, year_start, year_end):
     current_file = get_data(collection_name, year_start, year_end, 'raw')
@@ -31,6 +65,7 @@ def to_light(collection_name, year_start, year_end):
         elt = light_parse(d)
         if elt:
             new_data.append(elt)
+    save_mongo(new_data, year_start)
     save_data(new_data, collection_name, year_start, year_end, 'light')
 
 def save_data(data, collection_name, year_start, year_end, data_type):
@@ -104,5 +139,6 @@ def harvest_and_save(collection_name, query, year_start, year_end, send_to_crawl
 
 
 def harvest_all(collection_name, query, year_start, year_end, send_to_crawler):
+    reset_mongo()
     for year in range(year_start, year_end+1):
         harvest_and_save(collection_name, query, year, year, send_to_crawler)
