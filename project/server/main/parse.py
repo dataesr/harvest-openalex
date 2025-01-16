@@ -18,6 +18,15 @@ def light_parse(notice):
         doi = doi.replace("https://doi.org/", "").lower()
         res["doi"] = doi
         res["id"] = "doi" + doi
+    locations = notice.get('locations')
+    if isinstance(locations, list):
+        for loc in locations:
+            landing_page_url = loc.get('landing_page_url')
+            if isinstance(landing_page_url, str) and 'hal.science' in landing_page_url:
+                res["hal_id"] = landing_page_url.split('/')[-1]
+    
+    if doi is None and res.get('hal_id'):
+        res['id'] = 'hal'+res['hal_id']
     else:
         return None
     for f in ['apc_list', 'apc_paid', 'topics']:

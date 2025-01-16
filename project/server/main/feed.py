@@ -125,14 +125,14 @@ def harvest_and_save(collection_name, query, year_start, year_end, send_to_crawl
             parsed = parse_notice(n)
             if parsed:
                 parsed_data.append(parsed)
-            light = light_parse(notice)
+            light = light_parse(n)
             if light:
                 light_data.append(light)
 
     schema = json.load(open("/src/project/server/main/schema.json", "r"))
-    is_valid = validate_json_schema(data=parsed_data, _schema=schema)
-    if not is_valid:
-        logger.error(f"For collection_name {collection_name} {year_start} {year_end}, parsed data are not validated against the JSON schema. Please see errors logged before.")
+    #is_valid = validate_json_schema(data=parsed_data, _schema=schema)
+    #if not is_valid:
+    #    logger.error(f"For collection_name {collection_name} {year_start} {year_end}, parsed data are not validated against the JSON schema. Please see errors logged before.")
     save_data(data, collection_name, year_start, year_end, 'raw')
     save_data(parsed_data, collection_name, year_start, year_end, 'parsed')
     save_data(light_data, collection_name, year_start, year_end, 'light')
