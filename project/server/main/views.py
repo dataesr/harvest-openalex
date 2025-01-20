@@ -19,7 +19,7 @@ def home():
 def run_task_download():
     args = request.get_json(force=True)
     with Connection(redis.from_url(current_app.config["REDIS_URL"])):
-        q = Queue(queue_name, default_timeout=216000)
+        q = Queue(queue_name, default_timeout=2160000)
         task = q.enqueue(create_task_harvest, args)
     response_object = {
         "status": "success",
