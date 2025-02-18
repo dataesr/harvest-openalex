@@ -26,6 +26,7 @@ def reset_mongo():
     myclient['scanr'][collection_name].drop()
 
 def save_mongo(data, year):
+    logger.debug(f'Saving openalex data {year}')
     output_json = f'openalex_light_{year}.json'
     os.system(f'rm -rf {output_json}')
     to_jsonl(data, f'openalex_light_{year}.json')
@@ -69,6 +70,7 @@ def to_light(collection_name, year_start, year_end):
     save_data(new_data, collection_name, year_start, year_end, 'light')
 
 def save_data(data, collection_name, year_start, year_end, data_type):
+    logger.debug(f'saving data collection {collection_name} type {data_type} from {year_start} to {year_end}')
     year_start_end = f'{year_start}_{year_end}'
     current_file = f'openalex_{year_start_end}.json'
     os.system(f'rm -rf {current_file}')
@@ -111,6 +113,7 @@ def harvest_and_save(collection_name, query, year_start, year_end, send_to_crawl
 
     data, parsed_data, light_data = [], [], []
     for page in range(1, nb_pages + 1):
+        logger.debug(f'page {page} / {nb_pages}')
         if page == 1:
             cursor = "*"
         else:
