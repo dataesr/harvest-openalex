@@ -136,6 +136,7 @@ def harvest_and_save(collection_name, query, year_start, year_end, send_to_crawl
     save_data(data, collection_name, year_start, year_end, 'raw')
     save_data(parsed_data, collection_name, year_start, year_end, 'parsed')
     save_data(light_data, collection_name, year_start, year_end, 'light')
+    save_mongo(light_data, year_start)
 
 
 def harvest_all(collection_name, query, year_start, year_end, send_to_crawler):
