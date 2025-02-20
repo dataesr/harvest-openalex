@@ -9,7 +9,7 @@ def get_cited_counts(notice):
         res['cited_by_counts_by_year'] = counts
     return res
 
-def light_parse2(notice):
+def light_parse(notice):
     res = {}
     openalex_id = notice.get("id").split("/")[-1]
     res['openalex_id'] = openalex_id
