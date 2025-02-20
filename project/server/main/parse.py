@@ -9,7 +9,7 @@ def get_cited_counts(notice):
         res['cited_by_counts_by_year'] = counts
     return res
 
-def light_parse(notice):
+def light_parse2(notice):
     res = {}
     openalex_id = notice.get("id").split("/")[-1]
     res['openalex_id'] = openalex_id
@@ -24,11 +24,11 @@ def light_parse(notice):
             landing_page_url = loc.get('landing_page_url')
             if isinstance(landing_page_url, str) and 'hal.science' in landing_page_url:
                 res["hal_id"] = landing_page_url.split('/')[-1]
-    
-    if doi is None and res.get('hal_id'):
-        res['id'] = 'hal'+res['hal_id']
-    else:
-        return None
+    if doi is None:
+        if res.get('hal_id'):
+            res['id'] = 'hal'+res['hal_id']
+        else:
+            return None
     for f in ['apc_list', 'apc_paid', 'topics']:
         if f in notice:
             res[f] = notice[f]

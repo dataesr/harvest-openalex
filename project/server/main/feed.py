@@ -42,6 +42,7 @@ def save_mongo(data, year):
     mydb = myclient['scanr']
     mycol = mydb[collection_name]
     mycol.create_index('id')
+    mycol.create_index('openalex_id')
     os.system(f'rm -rf {output_json}')
     logger.debug(f'done')
 
@@ -88,8 +89,12 @@ def query_openalex(query, start_year, end_year, per_page, cursor):
     url += f'&per_page={per_page}'
     url += f'&cursor={cursor}'
     url += f'&api_key={OPENALEX_API_KEY}'
-    r = requests.get(url)
-    return r.json()
+    logger.debug(url)
+    r = requests.get(url, timeout=60)
+    res = r.json()
+    if r.status_code != 200:
+        logger.debug(f'error {r.status_code}')
+    return res
 
 
 def send_to_crawler(current_data):
@@ -121,13 +126,16 @@ def harvest_and_save(collection_name, query, year_start, year_end, send_to_crawl
         query_res = query_openalex(query, year_start, year_end, PER_PAGE, cursor)
         current_data = query_res.get("results", [])
         current_cursor = query_res.get("meta", {}).get("next_cursor")
+        logger.debug(f'{current_cursor}')
         if send_to_crawler:
             send_to_crawler(current_data)
         data += current_data
         for n in current_data:
+            #logger.debug(f"parse {n['id']}")
             parsed = parse_notice(n)
             if parsed:
                 parsed_data.append(parsed)
+            #logger.debug(f"parse light {n['id']}")
             light = light_parse(n)
             if light:
                 light_data.append(light)
