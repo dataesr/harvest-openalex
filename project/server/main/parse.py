@@ -29,7 +29,7 @@ def light_parse(notice):
             res['id'] = 'hal'+res['hal_id']
         else:
             return None
-    for f in ['apc_list', 'apc_paid', 'topics']:
+    for f in ['apc_list', 'apc_paid', 'topics', 'cited_by_count', 'citation_normalized_percentile', 'fwci']:
         if f in notice:
             res[f] = notice[f]
     citation_counts = get_cited_counts(notice)
