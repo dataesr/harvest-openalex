@@ -8,7 +8,7 @@ import pymongo
 import datetime
 
 from project.server.main.logger import get_logger
-from project.server.main.parse import parse_notice, light_parse
+from project.server.main.parse import parse_notice, light_parse, bso_local_parse
 from project.server.main.utils import validate_json_schema, to_jsonl
 from project.server.main.utils_swift import upload_object, download_object
 
@@ -58,7 +58,21 @@ def to_light_all(collection_name, year_start, year_end):
     for year in range(year_start, year_end+1):
         to_light(collection_name, year, year)
 
+@retry(delay=2, tries=3)
+def to_bso_local(collection_name, year_start, year_end):
+    for year in range(year_start, year_end+1):
+        new_data = []
+        current_file = get_data(collection_name, year, year, 'raw')
+        data = pd.read_json(current_file).to_dict(orient='records')
+        logger.debug(f'{len(data)} elts in {year}')
+        for d in data:
+            elt = bso_local_parse(d)
+            if elt:
+                new_data.append(elt)
+        logger.debug(f'writing excel with {len(new_data)} lines')
+        pd.DataFrame(new_data).to_csv(f'FULLETAB_openalex_{year}.csv', index=False, sep = ';') 
 
+@retry(delay=2, tries=3)
 def to_light(collection_name, year_start, year_end):
     current_file = get_data(collection_name, year_start, year_end, 'raw')
     data = pd.read_json(current_file).to_dict(orient='records')

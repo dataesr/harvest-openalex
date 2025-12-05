@@ -38,6 +38,26 @@ def light_parse(notice):
     res.update(corresponding)
     return res
 
+def bso_local_parse(notice):
+    res = {}
+    all_inst = []
+    if 'crossref' not in notice.get('indexed_in'):
+        return res
+    doi = notice.get("doi")
+    if doi:
+        doi = doi.replace("https://doi.org/", "").lower()
+        res["doi"] = doi
+    else:
+        return res
+    for a in notice.get('authorships', []):
+        current_insts = a.get('institutions')
+        for current_inst in current_insts:
+            if 'lineage' in current_inst:
+                current_lineage = [i.split('/')[-1].lower() for i in current_inst['lineage']]
+                all_inst += current_lineage
+    all_inst = list(set(all_inst))
+    res['labels'] = ','.join(all_inst)
+    return res
 
 def get_corresponding(notice):
     countries = []
@@ -58,10 +78,10 @@ def get_author_affiliations(institutions):
         country = institution.get("country_code")
         if country:
             a["country"] = country
-        a["external_ids"] = [
-            {"id_type": "openalex", "id_value": institution.get("id").split('/')[-1]}]
+        if isinstance(institution.get("id"), str):
+            a["external_ids"] = [{"id_type": "openalex", "id_value": institution.get("id").split('/')[-1]}]
         ror = institution.get("ror")
-        if ror:
+        if isinstance(ror, str):
             a["external_ids"].append({"id_type": "ror", "id_value": ror.split('/')[-1]})
         name = institution.get("display_name")
         if name:
@@ -79,7 +99,8 @@ def get_authors(authorships):
             a["affiliations"] = affiliations
         a["author_position"] = index + 1
         a["corresponding"] = author.get("is_corresponding")
-        a["external_ids"] = [{"id_type": "openalex","id_value": author.get("author").get("id").split('/')[-1]}]
+        if isinstance(author.get('id'), str):
+            a["external_ids"] = [{"id_type": "openalex","id_value": author.get("author").get("id").split('/')[-1]}]
         if isinstance(author.get("raw_author_name"), str):
             a["full_name"] = author.get("raw_author_name")
         orcid = author.get("author", {}).get("orcid")

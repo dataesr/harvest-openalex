@@ -2,7 +2,7 @@ import time
 import datetime
 import os
 import requests
-from project.server.main.feed import harvest_all, reset_mongo, to_light_all
+from project.server.main.feed import harvest_all, reset_mongo, to_light_all, to_bso_local
 from project.server.main.matcher import check_countries
 
 from project.server.main.logger import get_logger
@@ -24,6 +24,13 @@ def create_task_light(arg):
     year_end = arg.get('year_end', 2024)
     if collection_name:
         to_light_all(collection_name, year_start, year_end)
+
+def create_task_bso(arg):
+    collection_name = arg.get('collection_name')
+    year_start = arg.get('year_start', 2013)
+    year_end = arg.get('year_end', 2024)
+    if collection_name:
+        to_bso_local(collection_name, year_start, year_end)
 
 def create_task_check_affiliations(arg):
     collection_name = arg.get('collection_name')
