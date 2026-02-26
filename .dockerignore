@@ -1,4 +1,19 @@
+# IDE
 .idea
-.mypy*
 .vscode
+.zed
+
+# Python
+.mypy*
 venv
+
+# Env var
+.env
+
+# Notebook
+notebooks/data
+notebooks/issns.xlsx
+
+# Git
+.git
+.gitignore
