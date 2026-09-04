@@ -36,3 +36,17 @@ dist
 doc
 doc/out.*
 doc/bso.tex
+# Python
+.mypy*
+venv
+
+# Env var
+.env
+
+# Notebook
+notebooks/data
+notebooks/issns.xlsx
+
+# Git
+.git
+.gitignore
