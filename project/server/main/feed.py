@@ -71,6 +71,7 @@ def to_bso_local(collection_name, year_start, year_end):
                 new_data.append(elt)
         logger.debug(f'writing excel with {len(new_data)} lines')
         pd.DataFrame(new_data).to_csv(f'FULLETAB_openalex_{year}.csv', index=False, sep = ';') 
+        upload_object('bso-local', f'FULLETAB_openalex_{year}.csv', f'FULLETAB_openalex_{year}.csv')
 
 @retry(delay=2, tries=3)
 def to_light(collection_name, year_start, year_end):
